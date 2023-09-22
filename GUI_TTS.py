@@ -1,0 +1,44 @@
+# coding: cp1251
+
+import os
+import torch
+import PySimpleGUI as sg
+
+device = torch.device('cpu')
+torch.set_num_threads(16)
+local_file = 'model.pt'
+
+if not os.path.isfile(local_file):
+    torch.hub.download_url_to_file('https://models.silero.ai/models/tts/ru/v3_1_ru.pt',
+                                   local_file)  
+
+model = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
+model.to(device)
+
+sg.theme('DarkBlue13')
+
+layout = [[sg.Text('¬ведите текст:', size=(15, 1), font=('Arial', 11)),
+           sg.Combo(['xenia', 'kseniya', 'baya', 'eugene', 'aidar'], size=(10, 1), key='-CHOISE-', pad=((170, 0), (0, 0)), default_value='xenia', readonly=True)],
+          [sg.Multiline(key='-INPUT-', size=(40, 7)),
+           sg.Button('ќзвучить', size=(10, 1), pad=((10, 0), (80, 0)))]] 
+
+window = sg.Window('MD TTS', layout, size=(430, 150))
+
+while True:
+    event, values = window.read()
+    if event == sg.WINDOW_CLOSED or event == 'ќтмена':
+        break
+    if event == 'ќзвучить':
+        ssml_sample = f"""
+                      <speak>
+                      <p>
+                      {values['-INPUT-']}
+                      </p>
+                      </speak>
+                      """
+        speaker = values['-CHOISE-']
+        sample_rate = 48000
+        audio = model.save_wav(ssml_text=ssml_sample, speaker=speaker, sample_rate=sample_rate)
+        sg.popup('‘айл успешно сохранЄн!', title='')
+
+window.close()
